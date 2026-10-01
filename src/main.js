@@ -194,8 +194,12 @@ class Game {
   _loop() {
     const frame = () => {
       const dt = Math.min(this.clock.getDelta(), 0.05);
-      this._update(dt);
-      this.renderer.render(this.scene, this.camera);
+      try {
+        this._update(dt);
+        this.renderer.render(this.scene, this.camera);
+      } catch (e) {
+        if (!this._errored) { this._errored = true; console.error('[amiguito]', e); if (window.__amiguito_fatal) window.__amiguito_fatal(e.message); }
+      }
       requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);
@@ -247,6 +251,19 @@ class Game {
       this.ui.bubble(this.i18n.t('need_help'));
       this.voice.speak(this.i18n.t('need_help'));
     }
+  }
+
+  _moodInfo() {
+    const n = this.needs, t = this.i18n;
+    if (n.asleep) return { face: '😴', label: t.t('mood_sleeping'), sub: t.t('sub_sleeping') };
+    if (n.health < 0.4) return { face: '🤒', label: t.t('mood_sick'), sub: t.t('sub_sick') };
+    if (n.hunger > 0.8) return { face: '🍽️', label: t.t('mood_hungry'), sub: t.t('sub_hungry') };
+    if (n.energy < 0.2) return { face: '🥱', label: t.t('mood_tired'), sub: t.t('sub_tired') };
+    if (n.hygiene < 0.25) return { face: '🫧', label: t.t('mood_dirty'), sub: t.t('sub_dirty') };
+    const m = n.mood();
+    if (m > 0.72) return { face: '😄', label: t.t('mood_happy'), sub: t.t('sub_happy') };
+    if (m > 0.5) return { face: '🙂', label: t.t('mood_ok'), sub: t.t('sub_ok') };
+    return { face: '😟', label: t.t('mood_sad'), sub: t.t('sub_sad') };
   }
 
   _refreshHUD() {
