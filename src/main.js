@@ -95,8 +95,8 @@ class Game {
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 100);
-    this.camera.position.set(0, 1.95, 5.0);
-    this.camera.lookAt(0, 1.05, 0);
+    this.camera.position.set(0, 1.62, 4.55);
+    this.camera.lookAt(0, 0.98, 0);
 
     this.scene.add(new THREE.HemisphereLight(0xfdf6ff, 0x8fd3bd, 0.95));
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.25));
@@ -494,6 +494,7 @@ class Game {
         this.save();
       },
       onLang: () => this._setLang(this.i18n.other),
+      onLog: () => this.ui.toggleLog(),
       onSettings: () => this.ui.openSettings(
         { voiceOn: this.settings.voiceOn, pitch: this.voice.pitch, rate: this.voice.rate },
         (patch) => this._onSettings(patch))

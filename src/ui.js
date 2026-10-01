@@ -28,10 +28,20 @@ export class UI {
     }
   }
 
-  bindTopbar({ onVoice, onLang, onSettings }) {
+  bindTopbar({ onVoice, onLang, onSettings, onLog }) {
     $('btn-voice').addEventListener('click', onVoice);
     $('btn-lang').addEventListener('click', onLang);
+    const bl = $('btn-log');
+    if (bl && onLog) bl.addEventListener('click', onLog);
     $('btn-settings').addEventListener('click', onSettings);
+  }
+
+  toggleLog() {
+    if (!this.logEl) return;
+    const open = this.logEl.classList.toggle('open');
+    const b = $('btn-log');
+    if (b) b.classList.toggle('off', !open);
+    if (open) this.logEl.scrollTop = this.logEl.scrollHeight;
   }
 
   bindControls(onAct) {
