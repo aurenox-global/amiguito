@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#aef0d8" />
+<title>Amiguito · tu criatura 3D con IA</title>
+<meta name="description" content="Amiguito: una mascota virtual adorable en 3D que aprende con machine learning, te enseña cosas y te habla con una voz amable. Hecha con Three.js y Web Speech API." />
+<meta property="og:title" content="Amiguito · criatura 3D con IA" />
+<meta property="og:description" content="Una mascota virtual adorable que aprende, te enseña y te habla." />
+<meta property="og:type" content="website" />
+<link rel="icon" href="./assets/favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="./styles.css" />
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+</head>
+<body>
+<div id="app">
+  <canvas id="scene" aria-label="Escena 3D del amiguito"></canvas>
+
+  <div id="stage-overlay">
+    <div id="bubble" class="bubble hidden" role="status"></div>
+    <div id="zzz" class="zzz hidden">Z z z</div>
+  </div>
+
+  <header id="topbar">
+    <div class="brand"><span class="logo">🧠</span><span class="name">Amiguito</span></div>
+    <div class="top-actions">
+      <button id="btn-voice" class="icon-btn" title="Activar/desactivar voz" aria-label="Voz">🔊</button>
+      <button id="btn-lang" class="icon-btn" title="Idioma / Language" aria-label="Idioma">ES</button>
+      <button id="btn-settings" class="icon-btn" title="Ajustes" aria-label="Ajustes">⚙️</button>
+    </div>
+  </header>
+
+  <section id="hud" class="glass" aria-label="Estado del amiguito">
+    <div class="mood-row">
+      <span id="face" class="face">🙂</span>
+      <div class="mood-txt">
+        <strong id="mood-label">Feliz</strong>
+        <small id="mood-sub">aprendiendo y jugando</small>
+      </div>
+    </div>
+    <div class="bars">
+      <div class="bar" data-need="food"><span class="ico">🍎</span><i class="fill"></i><b class="pct"></b></div>
+      <div class="bar" data-need="energy"><span class="ico">⚡</span><i class="fill"></i><b class="pct"></b></div>
+      <div class="bar" data-need="joy"><span class="ico">💛</span><i class="fill"></i><b class="pct"></b></div>
+      <div class="bar" data-need="clean"><span class="ico">🫧</span><i class="fill"></i><b class="pct"></b></div>
+      <div class="bar" data-need="health"><span class="ico">❤️</span><i class="fill"></i><b class="pct"></b></div>
+    </div>
+    <div class="meta"><span id="age"></span><span id="brain-lvl" title="Nivel de aprendizaje">🧠 0</span><span id="mastery" title="Dominio educativo">🎓 0%</span></div>
+  </section>
+
+  <section id="controls" aria-label="Acciones">
+    <button class="act" data-act="feed"><span>🍎</span><b id="lbl-feed">Comida</b></button>
+    <button class="act" data-act="play"><span>🎈</span><b id="lbl-play">Jugar</b></button>
+    <button class="act" data-act="sleep"><span>😴</span><b id="lbl-sleep">Dormir</b></button>
+    <button class="act" data-act="clean"><span>🫧</span><b id="lbl-clean">Baño</b></button>
+    <button class="act" data-act="teach"><span>🎓</span><b id="lbl-teach">Enseñar</b></button>
+    <button class="act" data-act="talk"><span>💬</span><b id="lbl-talk">Hablar</b></button>
+  </section>
+
+  <aside id="log" class="glass" aria-label="Diario del amiguito"></aside>
+
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="sheet">
+      <button id="modal-close" class="icon-btn close" aria-label="Cerrar">✕</button>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <noscript>Necesitas JavaScript para ver a tu Amiguito.</noscript>
+</div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
