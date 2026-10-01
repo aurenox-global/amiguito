@@ -7,6 +7,7 @@ import { QLearner } from './brain/qlearning.js';
 import { SpacedRepetition } from './spaced.js';
 import { LESSONS, shuffledOptions } from './education.js';
 import { Voice } from './voice.js';
+import { Sound } from './audio.js';
 import { I18n } from './i18n.js';
 import { UI } from './ui.js';
 import * as store from './store.js';
@@ -28,6 +29,7 @@ class Game {
     this.i18n = new I18n('es');
     this.ui = new UI(this.i18n);
     this.voice = new Voice({ lang: this.i18n.lang });
+    this.sound = new Sound();
     this.settings = { voiceOn: true, lang: 'es', created: Date.now() };
 
     // Mundo (3D) ─ declarado antes de load() por si no hay WebGL
@@ -61,6 +63,8 @@ class Game {
     this.i18n.set(this.settings.lang);
     this.voice.lang = this.settings.lang;
     this.voice.enabled = this.settings.voiceOn;
+    this.sound.lang = this.settings.lang;
+    this.sound.enabled = this.settings.voiceOn;
   }
 
   _applySaved(s) { /* hook por si en el futuro migramos formatos */ }
@@ -341,8 +345,9 @@ class Game {
 
   _sayAuto(key) {
     const txt = this.i18n.t(key);
+    const id = 'auto_' + key.split('.').pop();
     if (Math.random() < 0.6) this.ui.bubble(txt, 2800);
-    if (this.settings.voiceOn && Math.random() < 0.35) this.voice.speak(txt);
+    if (Math.random() < 0.5) this._spk(id, txt);
   }
 
   // ── Interacciones del usuario ──────────────────────────────
@@ -361,8 +366,16 @@ class Game {
   _say(key, vars) {
     const text = this.i18n.t(key, vars);
     this.ui.bubble(text, 4000);
-    if (this.settings.voiceOn) this.voice.speak(text);
+    this._spk(key, text, vars);
     return text;
+  }
+
+  // Habla: usa la VOZ PROPIA incluida (Piper) y, si no existe, la del navegador.
+  _spk(id, text, vars) {
+    if (!this.settings.voiceOn) return;
+    const personalized = vars && vars.name && vars.name !== 'Amiguito';
+    if (!personalized && this.sound.play(this.i18n.lang, id)) { this.voice.stop(); return; }
+    this.voice.speak(text, { lang: this.i18n.lang });
   }
 
   _action(act) {
@@ -426,7 +439,7 @@ class Game {
     const lang = this.i18n.lang;
     const lesson = this._pickLesson();
     const sh = shuffledOptions(lesson, lang);
-    this.voice.speak(lesson.prompt[lang] || lesson.prompt.es);
+    this._spk('lesson_' + lesson.id, lesson.prompt[lang] || lesson.prompt.es);
     this.ui.openQuiz(lesson, sh,
       (ok, lesson2, idx, next) => {
         if (next) { this._openLesson(); return; }
@@ -497,7 +510,7 @@ class Game {
     this.ui.bubble(g, 5200);
     this._log(g, '👋');
     this._refreshHUD();
-    if (this.settings.voiceOn) setTimeout(() => this.voice.speak(g), 400);
+    if (this.settings.voiceOn) setTimeout(() => this._spk('greet', g, { name: this.petName }), 400);
   }
 
   _bindUI() {
@@ -506,8 +519,9 @@ class Game {
       onVoice: () => {
         this.settings.voiceOn = !this.settings.voiceOn;
         this.voice.enabled = this.settings.voiceOn;
+        this.sound.enabled = this.settings.voiceOn;
         this.ui.setVoiceIcon(this.settings.voiceOn);
-        if (this.settings.voiceOn) this.voice.speak(this.i18n.t('ok'));
+        if (this.settings.voiceOn) this._spk('ok', this.i18n.t('ok'));
         this.save();
       },
       onLang: () => this._setLang(this.i18n.other),
@@ -523,7 +537,7 @@ class Game {
   }
 
   _onSettings(p) {
-    if (p.voiceOn != null) { this.settings.voiceOn = p.voiceOn; this.voice.enabled = p.voiceOn; this.ui.setVoiceIcon(p.voiceOn); }
+    if (p.voiceOn != null) { this.settings.voiceOn = p.voiceOn; this.voice.enabled = p.voiceOn; this.sound.enabled = p.voiceOn; this.ui.setVoiceIcon(p.voiceOn); }
     if (p.pitch != null) this.voice.pitch = p.pitch;
     if (p.rate != null) this.voice.rate = p.rate;
     if (p.voiceURI !== undefined) this.voice.voiceURI = p.voiceURI || null;
@@ -536,7 +550,7 @@ class Game {
   }
 
   _setLang(lang) {
-    this.i18n.set(lang); this.voice.lang = lang; this.settings.lang = lang;
+    this.i18n.set(lang); this.voice.lang = lang; this.sound.lang = lang; this.settings.lang = lang;
     this.ui.setLangLabels();
     const g = this.i18n.t('greet', { name: this.petName });
     if (this.settings.voiceOn) this.voice.speak(g, { lang });
