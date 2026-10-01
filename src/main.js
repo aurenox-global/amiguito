@@ -56,7 +56,7 @@ class Game {
     this.chat = s.chat || [];
     this.known = s.known || {};
     this.settings.lang = s.lang || this.settings.lang;
-    if (s.voice) { this.settings.voiceOn = s.voice.on !== false; this.voice.pitch = s.voice.pitch || 1.4; this.voice.rate = s.voice.rate || 1; }
+    if (s.voice) { this.settings.voiceOn = s.voice.on !== false; this.voice.pitch = s.voice.pitch || 1.15; this.voice.rate = s.voice.rate || 1; this.voice.voiceURI = s.voice.uri || null; }
     this.settings.created = s.created || this.settings.created;
     this.i18n.set(this.settings.lang);
     this.voice.lang = this.settings.lang;
@@ -512,18 +512,23 @@ class Game {
       },
       onLang: () => this._setLang(this.i18n.other),
       onLog: () => this.ui.toggleLog(),
-      onSettings: () => this.ui.openSettings(
-        { voiceOn: this.settings.voiceOn, pitch: this.voice.pitch, rate: this.voice.rate },
-        (patch) => this._onSettings(patch))
+      onSettings: () => this.ui.openSettings(this._settingsData(), (patch) => this._onSettings(patch))
     });
     document.getElementById('modal').addEventListener('click', (e) => { if (e.target.id === 'modal') this.ui.close(); });
+  }
+
+  _settingsData() {
+    const voices = this.voice.listFor(this.i18n.lang).map((v) => ({ uri: v.voiceURI, name: v.name, lang: v.lang }));
+    return { voiceOn: this.settings.voiceOn, pitch: this.voice.pitch, rate: this.voice.rate, voiceURI: this.voice.voiceURI, voices };
   }
 
   _onSettings(p) {
     if (p.voiceOn != null) { this.settings.voiceOn = p.voiceOn; this.voice.enabled = p.voiceOn; this.ui.setVoiceIcon(p.voiceOn); }
     if (p.pitch != null) this.voice.pitch = p.pitch;
     if (p.rate != null) this.voice.rate = p.rate;
-    if (p.lang) { this._setLang(p.lang); this.ui.openSettings({ voiceOn: this.settings.voiceOn, pitch: this.voice.pitch, rate: this.voice.rate }, (x) => this._onSettings(x)); }
+    if (p.voiceURI !== undefined) this.voice.voiceURI = p.voiceURI || null;
+    if (p.test) this.voice.test(this.i18n.lang);
+    if (p.lang) { this._setLang(p.lang); if (p.reopen) this.ui.openSettings(this._settingsData(), (x) => this._onSettings(x)); }
     if (p.export) store.download(this._serialize());
     if (p.import) store.upload().then((obj) => { if (obj) { store.save(obj); location.reload(); } else this.ui.bubble(this.i18n.t('import_fail')); });
     if (p.reset) { store.wipe(); location.reload(); }
@@ -543,7 +548,7 @@ class Game {
     const p = this.creature ? this.creature.root.position : { x: 0, z: 0 };
     return {
       v: 1, created: this.settings.created, lang: this.settings.lang, petName: this.petName,
-      voice: { on: this.settings.voiceOn, pitch: this.voice.pitch, rate: this.voice.rate },
+      voice: { on: this.settings.voiceOn, pitch: this.voice.pitch, rate: this.voice.rate, uri: this.voice.voiceURI },
       needs: this.needs.toJSON(), q: this.q.toJSON(), personality: this.personality.toJSON(),
       spaced: this.spaced.toJSON(), vocab: this.vocab, chat: this.chat.slice(-40), known: this.known,
       pos: { x: p.x, z: p.z }

@@ -126,6 +126,11 @@ export class UI {
   openSettings(data, cb) {
     const t = this.t.bind(this);
     const lg = this.i18n.lang;
+    const vs = data.voices || [];
+    const vopts = [`<option value="">${lg === 'en' ? 'Automatic' : 'Automática'}</option>`]
+      .concat(vs.map((v) => `<option value="${v.uri}" ${v.uri === data.voiceURI ? 'selected' : ''}>${v.name} (${v.lang})</option>`)).join('');
+    const noVoices = vs.length === 0
+      ? `<small class="hint" style="color:#c0392b">⚠️ ${lg === 'en' ? 'Your browser has no voices for this language.' : 'Tu navegador no tiene voces instaladas para este idioma.'}</small>` : '';
     this.openModal(`
       <h2>⚙️ ${t('settings')}</h2>
       <p class="sub">${this.i18n.t('tagline')}</p>
@@ -133,16 +138,22 @@ export class UI {
         <button class="switch" id="s-voice" aria-pressed="${data.voiceOn}"></button></div>
       <div class="toggle"><span>🌐 ${t('language')}</span>
         <button class="btn ghost" id="s-lang">${lg === 'es' ? 'Español ⇄ English' : 'English ⇄ Español'}</button></div>
-      <div class="field" style="margin-top:14px"><label>🎵 ${t('pitch')}: <b id="pv">${data.pitch}</b></label>
-        <input type="range" id="s-pitch" min="0.6" max="2" step="0.1" value="${data.pitch}"></div>
+      <div class="field" style="margin-top:14px"><label>🗣️ ${lg === 'en' ? 'Voice' : 'Voz'} ${lg === 'en' ? '(pick one you understand)' : '(elige una que se entienda)'}</label>
+        <select id="s-voicelist">${vopts}</select>
+        ${noVoices}
+        <div class="row" style="margin-top:8px"><button class="btn ghost" id="s-test">🔊 ${lg === 'en' ? 'Test voice' : 'Probar voz'}</button></div>
+      </div>
+      <div class="field"><label>🎵 ${t('pitch')}: <b id="pv">${data.pitch}</b></label>
+        <input type="range" id="s-pitch" min="0.6" max="1.8" step="0.05" value="${data.pitch}"></div>
       <div class="field"><label>⏩ ${t('rate')}: <b id="rv">${data.rate}</b></label>
-        <input type="range" id="s-rate" min="0.6" max="1.6" step="0.1" value="${data.rate}"></div>
-      <div class="row end" style="margin-top:18px">
+        <input type="range" id="s-rate" min="0.6" max="1.4" step="0.05" value="${data.rate}"></div>
+      <p class="hint" style="margin-top:4px">${lg === 'en' ? 'Tip: if the voice sounds odd, pick another one and test it.' : 'Consejo: si la voz suena rara, elige otra y pruébala.'}</p>
+      <div class="row end" style="margin-top:14px">
         <button class="btn ghost" id="s-import">⬆️ ${t('import')}</button>
         <button class="btn ghost" id="s-export">⬇️ ${t('export')}</button>
         <button class="btn ghost" id="s-reset" style="color:#c0392b">♻️ ${t('reset')}</button>
       </div>
-      <p class="hint">${t('mic_no')} · Amiguito funciona 100% en tu navegador.</p>`);
+      <p class="hint">Amiguito funciona 100% en tu navegador.</p>`);
     $('modal-close').onclick = () => this.close();
 
     $('s-voice').onclick = (e) => {
@@ -151,6 +162,10 @@ export class UI {
       cb({ voiceOn: on });
     };
     $('s-lang').onclick = () => cb({ lang: this.i18n.other, reopen: true });
+    const sel = $('s-voicelist');
+    if (sel) sel.onchange = () => cb({ voiceURI: sel.value || null });
+    const tb = $('s-test');
+    if (tb) tb.onclick = () => cb({ test: true });
     $('s-pitch').oninput = (e) => { $('pv').textContent = e.target.value; cb({ pitch: parseFloat(e.target.value), silent: true }); };
     $('s-rate').oninput = (e) => { $('rv').textContent = e.target.value; cb({ rate: parseFloat(e.target.value), silent: true }); };
     $('s-export').onclick = () => cb({ export: true });
