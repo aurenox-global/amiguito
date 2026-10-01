@@ -11,9 +11,6 @@
 <meta property="og:type" content="website" />
 <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="./styles.css" />
-<script type="importmap">
-{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
-</script>
 </head>
 <body>
 <div id="app">
@@ -71,7 +68,33 @@
   </div>
 
   <noscript>Necesitas JavaScript para ver a tu Amiguito.</noscript>
+  <div id="fatal" class="fatal hidden"></div>
 </div>
+<script>
+(function () {
+  function show(msg) {
+    var f = document.getElementById('fatal');
+    if (!f) return;
+    f.classList.remove('hidden');
+    f.innerHTML = '<b>⚠️ No se pudo iniciar Amiguito</b><br><span class="det">' + String(msg).slice(0, 400) +
+      '</span><br><small>Prueba con Chrome, Edge o Safari actualizados y con WebGL activado.</small>';
+  }
+  window.__amiguito_fatal = show;
+  window.addEventListener('error', function (e) {
+    var m = (e && e.message) || 'error de carga';
+    if (e && e.target && e.target.tagName === 'SCRIPT') m = 'No se pudo cargar: ' + (e.target.src || 'script');
+    if (m !== 'Script error.') show(m);
+  }, true);
+  window.addEventListener('unhandledrejection', function (e) {
+    show((e.reason && (e.reason.message || e.reason)) || 'promesa rechazada');
+  });
+  try {
+    var c = document.createElement('canvas');
+    var gl = c.getContext('webgl2') || c.getContext('webgl') || c.getContext('experimental-webgl');
+    if (!gl) show('Tu navegador no tiene WebGL activado.');
+  } catch (err) { show('WebGL no disponible: ' + err.message); }
+})();
+</script>
 <script type="module" src="./src/main.js"></script>
 </body>
 </html>

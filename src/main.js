@@ -1,5 +1,5 @@
 // Amiguito · punto de entrada: escena 3D, ciclo de vida, cerebro (ML) y UI.
-import * as THREE from 'three';
+import * as THREE from '../vendor/three.module.js';
 import { Creature } from './creature.js';
 import { Needs } from './needs.js';
 import { Personality } from './brain/personality.js';

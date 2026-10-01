@@ -1,6 +1,6 @@
 // La criatura 3D: se construye por completo con geometrías de Three.js (sin modelos externos,
 // así nunca falla por un archivo que falte). Expone update() para las animaciones.
-import * as THREE from 'three';
+import * as THREE from '../vendor/three.module.js';
 
 const mat = (color, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.55, metalness: 0.04 }, o));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));

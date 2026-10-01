@@ -133,6 +133,14 @@ body{
 .quiz-fact{background:#f0fff9;border:1px solid var(--stroke);border-radius:14px;padding:12px;font-size:.85rem;margin-top:12px;display:none}
 .hint{font-size:.74rem;color:var(--ink-soft);margin-top:6px}
 
+/* ── aviso de error fatal ───────────────────────────── */
+.fatal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:40;max-width:min(560px,92vw);
+  background:rgba(255,255,255,.96);border:1px solid var(--stroke);border-radius:20px;padding:20px 22px;
+  box-shadow:0 20px 60px rgba(18,58,51,.3);text-align:center;font-size:.9rem;line-height:1.45;color:var(--ink)}
+.fatal.hidden{display:none}
+.fatal .det{display:inline-block;margin:6px 0;padding:6px 10px;background:#fff2f2;border:1px solid #f3c4c4;border-radius:10px;
+  font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.74rem;color:#a33;word-break:break-word}
+
 @media (max-width:720px){
   #hud{width:152px;left:8px;top:58px;padding:8px}
   #hud .face{font-size:1.4rem}
