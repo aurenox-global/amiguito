@@ -1,0 +1,35 @@
+{
+  "subject": "chemistry",
+  "icon": "⚗️",
+  "name": { "es": "Química", "en": "Chemistry" },
+  "levels": [
+    {
+      "title": { "es": "Los estados del agua", "en": "States of water" },
+      "items": [
+        { "q": { "es": "¿Qué es el hielo?", "en": "What is ice?" },
+          "options": { "es": ["Agua sólida", "Agua líquida", "Aire"], "en": ["Solid water", "Liquid water", "Air"] }, "answer": 0,
+          "why": { "es": "Cuando el agua se congela, se vuelve sólida.", "en": "When water freezes it becomes solid." } },
+        { "q": { "es": "Si calientas mucho el agua, ¿qué pasa?", "en": "If you heat water a lot, what happens?" },
+          "options": { "es": ["Se evapora", "Se congela", "Se hace piedra"], "en": ["It evaporates", "It freezes", "It turns to stone"] }, "answer": 0,
+          "why": { "es": "Con calor el agua se convierte en vapor.", "en": "With heat, water turns into steam." } },
+        { "q": { "es": "¿En qué estado está el agua de un vaso?", "en": "What state is water in a glass?" },
+          "options": { "es": ["Sólido", "Líquido", "Gaseoso"], "en": ["Solid", "Liquid", "Gas"] }, "answer": 1,
+          "why": { "es": "El agua del vaso es líquida.", "en": "Water in a glass is liquid." } }
+      ]
+    },
+    {
+      "title": { "es": "Materiales y mezclas", "en": "Materials & mixtures" },
+      "items": [
+        { "q": { "es": "¿Qué se disuelve en el agua?", "en": "What dissolves in water?" },
+          "options": { "es": ["La sal", "La arena", "La madera"], "en": ["Salt", "Sand", "Wood"] }, "answer": 0,
+          "why": { "es": "La sal se disuelve y ya no se ve.", "en": "Salt dissolves and disappears from sight." } },
+        { "q": { "es": "¿Cuál de estos es un metal?", "en": "Which of these is a metal?" },
+          "options": { "es": ["Hierro", "Madera", "Papel"], "en": ["Iron", "Wood", "Paper"] }, "answer": 0,
+          "why": { "es": "El hierro es un metal, brilla y es duro.", "en": "Iron is a metal: it shines and is strong." } },
+        { "q": { "es": "¿Qué material flota en el agua?", "en": "Which material floats on water?" },
+          "options": { "es": ["La piedra", "La madera", "El hierro"], "en": ["Stone", "Wood", "Iron"] }, "answer": 1,
+          "why": { "es": "La madera es ligera y flota.", "en": "Wood is light and floats." } }
+      ]
+    }
+  ]
+}

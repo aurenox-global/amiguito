@@ -5,7 +5,7 @@ import { Needs } from './needs.js';
 import { Personality } from './brain/personality.js';
 import { QLearner } from './brain/qlearning.js';
 import { SpacedRepetition } from './spaced.js';
-import { LESSONS, shuffledOptions } from './education.js';
+import { LESSONS, shuffledOptions, SUBJECTS, loadSubject } from './education.js';
 import { Voice } from './voice.js';
 import { Sound } from './audio.js';
 import { I18n } from './i18n.js';
@@ -31,6 +31,8 @@ class Game {
     this.voice = new Voice({ lang: this.i18n.lang });
     this.sound = new Sound();
     this.settings = { voiceOn: true, lang: 'es', created: Date.now() };
+    this.custom = { body: 0xfa9720, eye: 0x1a5fb0, acc: 'none' };
+    this._listening = false;
 
     // Mundo (3D) ─ declarado antes de load() por si no hay WebGL
     this.creature = null;
@@ -60,6 +62,7 @@ class Game {
     this.settings.lang = s.lang || this.settings.lang;
     if (s.voice) { this.settings.voiceOn = s.voice.on !== false; this.voice.pitch = s.voice.pitch || 1.15; this.voice.rate = s.voice.rate || 1; this.voice.voiceURI = s.voice.uri || null; }
     this.settings.created = s.created || this.settings.created;
+    if (s.custom) Object.assign(this.custom, s.custom);
     this.i18n.set(this.settings.lang);
     this.voice.lang = this.settings.lang;
     this.voice.enabled = this.settings.voiceOn;
@@ -150,29 +153,43 @@ class Game {
 
     this.creature = new Creature();
     this.scene.add(this.creature.root);
+    this._applyCustom();
 
     this._resize();
     window.addEventListener('resize', () => this._resize());
 
-    // puntero / mirada
+    // puntero / mirada + toque (solo si tocas A ÉL) + mantener pulsado = hablar por voz
     this.pointer = new THREE.Vector2();
     this.ray = new THREE.Raycaster();
+    let holdTimer = null, startX = 0, startY = 0, downHit = false, longFired = false;
+    const cancelHold = () => { if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; } };
     canvas.addEventListener('pointermove', (e) => {
       const nx = (e.clientX / window.innerWidth) * 2 - 1;
       const ny = (e.clientY / window.innerHeight) * 2 - 1;
       this.pointer.set(nx, -ny);
       this.creature.setLook(nx, -ny);
       this.lastInteractAt = Date.now();
+      if (holdTimer && Math.hypot(e.clientX - startX, e.clientY - startY) > 16) cancelHold();
     });
     canvas.addEventListener('pointerdown', (e) => {
       const nx = (e.clientX / window.innerWidth) * 2 - 1;
       const ny = (e.clientY / window.innerHeight) * 2 - 1;
       this.pointer.set(nx, -ny);
       this.ray.setFromCamera(this.pointer, this.camera);
-      const hit = this.ray.intersectObject(this.creature.root, true);
-      if (hit && hit.length) this._poke();
+      downHit = this.ray.intersectObject(this.creature.root, true).length > 0;
+      startX = e.clientX; startY = e.clientY; longFired = false;
+      cancelHold();
+      holdTimer = setTimeout(() => { holdTimer = null; longFired = true; this._talkByVoice(); }, 550);
       this._unlockAudio();
     });
+    const endHold = () => {
+      const wasLong = longFired;
+      cancelHold();
+      if (!wasLong && downHit) this._poke();
+      longFired = false;
+    };
+    canvas.addEventListener('pointerup', endHold);
+    canvas.addEventListener('pointercancel', () => { cancelHold(); longFired = false; });
     window.addEventListener('keydown', () => this._unlockAudio(), { once: true });
     return true;
   }
@@ -427,7 +444,10 @@ class Game {
   // ── Educación ──────────────────────────────────────────────
   _teach() {
     if (this.needs.asleep) { this._say('asleep_msg'); return; }
-    this._openLesson();
+    this.ui.openSubjects(SUBJECTS, this.i18n.lang, (id) => {
+      if (id === 'basics') this._openLesson();
+      else this._openSubject(id);
+    });
   }
   _pickLesson() {
     const ids = LESSONS.map((l) => l.id);
@@ -455,6 +475,68 @@ class Game {
       },
       this.voice.canListen ? (cb) => this.voice.listen({ lang, onResult: cb }) : null
     );
+  }
+
+  // Materias del "cole" (datos bilingües en /data/<id>.json)
+  async _openSubject(id) {
+    const lang = this.i18n.lang;
+    this._subjCache = this._subjCache || {};
+    if (!this._subjCache[id]) {
+      try { this._subjCache[id] = await loadSubject(id); }
+      catch (e) { this.ui.bubble(lang === 'en' ? 'I could not load that subject 😕' : 'No pude cargar esa materia 😕'); return; }
+    }
+    const data = this._subjCache[id];
+    const all = [];
+    (data.levels || []).forEach((lv, li) => (lv.items || []).forEach((it, ii) => all.push({ it, li, ii })));
+    if (!all.length) return;
+    const pick = all[(Math.random() * all.length) | 0];
+    const item = pick.it;
+    const subjectName = (data.name && (data.name[lang] || data.name.es)) || id;
+    const lesson = {
+      id: `subj_${id}_${pick.li}_${pick.ii}`,
+      emoji: data.icon || '🎓',
+      prompt: item.q, opts: item.options, correct: item.answer, fact: item.why
+    };
+    const sh = shuffledOptions(lesson, lang);
+    this._spk('subj_' + lesson.id, lesson.prompt[lang] || lesson.prompt.es);
+    this.ui.openQuiz(lesson, sh, (ok, lesson2, idx, next) => {
+      if (next) { this._openSubject(id); return; }
+      this.spaced.grade(lesson2.id, ok ? 5 : 2);
+      this.needs.teach(ok);
+      this.personality.nudge('curiosity', ok ? 0.012 : 0.004);
+      this.creature.play(ok ? 'cheer' : 'sad');
+      const fb = ok ? this._say('learned_good') : this._say('learned_bad');
+      this._log(`${ok ? '✓' : '✗'} [${subjectName}] ${lesson2.prompt[lang] || lesson2.prompt.es} — ${fb}`, '🎓');
+      this._refreshHUD(); this.save();
+    }, this.voice.canListen ? (cb) => this.voice.listen({ lang, onResult: cb }) : null, subjectName);
+  }
+
+  // Personalización (colores y accesorio)
+  _applyCustom() {
+    if (!this.creature) return;
+    this.creature.setPalette({ body: this.custom.body, eye: this.custom.eye });
+    this.creature.setAccessory(this.custom.acc);
+  }
+  _openCustomize() { this.ui.openCustomize(this.custom, this.i18n.lang, (patch) => this._onCustom(patch)); }
+  _onCustom(patch) { Object.assign(this.custom, patch); this._applyCustom(); this.save(); }
+
+  // Mantener pulsada la pantalla → hablarle por voz
+  _talkByVoice() {
+    const lang = this.i18n.lang;
+    if (!this.voice.canListen) { this.ui.bubble(lang === 'en' ? 'Voice input is not available here 🎤' : 'Aquí no puedo oírte por voz 🎤', 3200); return; }
+    if (this._listening) return;
+    this._listening = true;
+    this._touch();
+    this.ui.bubble(lang === 'en' ? '🎤 I am listening… talk to me!' : '🎤 Te escucho… ¡háblame!', 7000);
+    this.voice.listen({ lang, onResult: (txt) => {
+      if (!txt) return;
+      const reply = this._reply(txt);
+      this.chat.push({ from: 'me', text: txt }, { from: 'pet', text: reply });
+      if (this.chat.length > 40) this.chat = this.chat.slice(-40);
+      this.ui.bubble(reply, 5200);
+      this._log('🎤 ' + txt, '💬');
+      this.save();
+    }, onEnd: () => { this._listening = false; } });
   }
 
   // ── Chat local (aprende por patrones, sin servicios externos) ──
@@ -526,7 +608,8 @@ class Game {
       },
       onLang: () => this._setLang(this.i18n.other),
       onLog: () => this.ui.toggleLog(),
-      onSettings: () => this.ui.openSettings(this._settingsData(), (patch) => this._onSettings(patch))
+      onSettings: () => this.ui.openSettings(this._settingsData(), (patch) => this._onSettings(patch)),
+      onCustom: () => this._openCustomize()
     });
     document.getElementById('modal').addEventListener('click', (e) => { if (e.target.id === 'modal') this.ui.close(); });
   }
@@ -563,6 +646,7 @@ class Game {
     return {
       v: 1, created: this.settings.created, lang: this.settings.lang, petName: this.petName,
       voice: { on: this.settings.voiceOn, pitch: this.voice.pitch, rate: this.voice.rate, uri: this.voice.voiceURI },
+      custom: this.custom,
       needs: this.needs.toJSON(), q: this.q.toJSON(), personality: this.personality.toJSON(),
       spaced: this.spaced.toJSON(), vocab: this.vocab, chat: this.chat.slice(-40), known: this.known,
       pos: { x: p.x, z: p.z }

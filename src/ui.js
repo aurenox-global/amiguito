@@ -28,12 +28,14 @@ export class UI {
     }
   }
 
-  bindTopbar({ onVoice, onLang, onSettings, onLog }) {
+  bindTopbar({ onVoice, onLang, onSettings, onLog, onCustom }) {
     $('btn-voice').addEventListener('click', onVoice);
     $('btn-lang').addEventListener('click', onLang);
     const bl = $('btn-log');
     if (bl && onLog) bl.addEventListener('click', onLog);
     $('btn-settings').addEventListener('click', onSettings);
+    const bc = $('btn-custom');
+    if (bc && onCustom) bc.addEventListener('click', onCustom);
   }
 
   toggleLog() {
@@ -173,14 +175,53 @@ export class UI {
     $('s-reset').onclick = () => { if (confirm(t('reset_warn'))) { cb({ reset: true }); } };
   }
 
+  // ── Selección de materia ──
+  openSubjects(subjects, lang, cb) {
+    const en = lang === 'en';
+    const cells = subjects.map((s) => `<button class="subj" data-id="${s.id}"><span class="subj-ico">${s.icon}</span><b>${(s.name && (s.name[lang] || s.name.es)) || s.id}</b></button>`).join('');
+    this.openModal(`
+      <h2>🎓 ${en ? 'What shall we learn?' : '¿Qué aprendemos hoy?'}</h2>
+      <p class="sub">${en ? 'Pick a subject and I will ask you questions.' : 'Elige una materia y te haré preguntas.'}</p>
+      <div class="subjects">${cells}</div>`, true);
+    $('modal-close').onclick = () => this.close();
+    this.body.querySelectorAll('.subj').forEach((b) => b.addEventListener('click', () => cb(b.dataset.id)));
+  }
+
+  // ── Personalizar (colores + accesorio) ──
+  openCustomize(data, lang, cb) {
+    const en = lang === 'en';
+    const hex = (v) => '#' + (typeof v === 'number' ? v.toString(16) : String(v).replace('#', '')).padStart(6, '0').slice(-6).toLowerCase();
+    const bodyColors = ['#fa9720', '#ff6b6b', '#ffd166', '#8ee3c8', '#6db3f2', '#c792ea', '#94f0a6', '#ff9ec4'];
+    const eyeColors = ['#1a5fb0', '#12a37a', '#8e44ad', '#e0563f', '#f0a020', '#2b2b2b', '#e0568f', '#00b8d4'];
+    const sw = (arr, cur, key) => arr.map((c) => `<button class="swatch ${hex(c) === hex(cur) ? 'on' : ''}" data-key="${key}" data-c="${c}" style="--c:${c}"></button>`).join('');
+    const accs = [['none', en ? 'None' : 'Nada', '🚫'], ['gorro', en ? 'Hat' : 'Gorro', '🎉'], ['corona', en ? 'Crown' : 'Corona', '👑'], ['lazo', en ? 'Bow' : 'Lazo', '🎀']];
+    const accBtns = accs.map(([v, label, ic]) => `<button class="acc ${data.acc === v ? 'on' : ''}" data-acc="${v}"><span>${ic}</span>${label}</button>`).join('');
+    this.openModal(`
+      <h2>🎨 ${en ? 'Make it yours' : 'Hazlo tuyo'}</h2>
+      <p class="sub">${en ? 'Choose colors and a look for your friend.' : 'Elige colores y un toque para tu amigo.'}</p>
+      <div class="field"><label>🎨 ${en ? 'Body color' : 'Color del cuerpo'}</label><div class="swatches">${sw(bodyColors, data.body, 'body')}</div></div>
+      <div class="field"><label>👀 ${en ? 'Eye color' : 'Color de los ojos'}</label><div class="swatches">${sw(eyeColors, data.eye, 'eye')}</div></div>
+      <div class="field"><label>🎀 ${en ? 'Accessory' : 'Accesorio'}</label><div class="accs">${accBtns}</div></div>`);
+    $('modal-close').onclick = () => this.close();
+    this.body.querySelectorAll('.swatch').forEach((b) => b.addEventListener('click', () => {
+      const key = b.dataset.key, val = parseInt(b.dataset.c.slice(1), 16);
+      this.body.querySelectorAll(`.swatch[data-key="${key}"]`).forEach((x) => x.classList.toggle('on', x === b));
+      cb(key === 'body' ? { body: val } : { eye: val });
+    }));
+    this.body.querySelectorAll('.acc').forEach((b) => b.addEventListener('click', () => {
+      this.body.querySelectorAll('.acc').forEach((x) => x.classList.toggle('on', x === b));
+      cb({ acc: b.dataset.acc });
+    }));
+  }
+
   // ── Quiz educativo ──
-  openQuiz(lesson, shuffled, onAnswer, onListen) {
+  openQuiz(lesson, shuffled, onAnswer, onListen, title) {
     const lang = this.i18n.lang;
     const t = this.t.bind(this);
     const opts = shuffled.options.map((o, i) => `<button class="opt" data-i="${i}">${o}</button>`).join('');
     const mic = onListen ? `<button class="btn ghost" id="q-mic" style="margin-right:auto">🎤 ${t('listening')}</button>` : `<span style="margin-right:auto"></span>`;
     this.openModal(`
-      <h2>${lesson.emoji} ${t('teach')}</h2>
+      <h2>${lesson.emoji} ${title || t('teach')}</h2>
       <p class="sub">${t('quiz_intro')}</p>
       <p style="font-size:1.12rem;font-weight:800;margin:6px 0 2px">${lesson.prompt[lang] || lesson.prompt.es}</p>
       <div class="opts">${opts}</div>

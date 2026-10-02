@@ -1,0 +1,35 @@
+{
+  "subject": "programming",
+  "icon": "💻",
+  "name": { "es": "Programación", "en": "Programming" },
+  "levels": [
+    {
+      "title": { "es": "Primeros pasos", "en": "First steps" },
+      "items": [
+        { "q": { "es": "¿Qué es un programa?", "en": "What is a program?" },
+          "options": { "es": ["Instrucciones para el ordenador", "Un dibujo", "Una canción"], "en": ["Instructions for a computer", "A drawing", "A song"] }, "answer": 0,
+          "why": { "es": "Un programa son órdenes que el ordenador sigue.", "en": "A program is a list of orders the computer follows." } },
+        { "q": { "es": "¿Para qué sirve un bucle?", "en": "What is a loop for?" },
+          "options": { "es": ["Repetir algo", "Borrar todo", "Apagar el PC"], "en": ["Repeating something", "Deleting everything", "Shutting down"] }, "answer": 0,
+          "why": { "es": "Un bucle repite las mismas órdenes.", "en": "A loop repeats the same orders." } },
+        { "q": { "es": "¿Cómo se llama un error en el código?", "en": "What is a mistake in code called?" },
+          "options": { "es": ["Un bug", "Un premio", "Una regla"], "en": ["A bug", "A prize", "A rule"] }, "answer": 0,
+          "why": { "es": "¡Un bug! Y se arregla con paciencia.", "en": "A bug! And we fix it with patience." } }
+      ]
+    },
+    {
+      "title": { "es": "Lógica", "en": "Logic" },
+      "items": [
+        { "q": { "es": "\"Si llueve, cojo el paraguas\" es…", "en": "\"If it rains, I take an umbrella\" is a…" },
+          "options": { "es": ["Una condición", "Un color", "Un número"], "en": ["A condition", "A color", "A number"] }, "answer": 0,
+          "why": { "es": "Se hace algo SI pasa otra cosa: una condición.", "en": "You do something IF something happens: a condition." } },
+        { "q": { "es": "¿Dónde guardas un dato para usarlo después?", "en": "Where do you store data to use later?" },
+          "options": { "es": ["En una variable", "En un botón", "En una rueda"], "en": ["In a variable", "In a button", "In a wheel"] }, "answer": 0,
+          "why": { "es": "Una variable guarda un dato con un nombre.", "en": "A variable stores data under a name." } },
+        { "q": { "es": "Una lista ordenada de pasos para una tarea es un…", "en": "An ordered list of steps for a task is an…" },
+          "options": { "es": ["Algoritmo", "Dibujo", "Canción"], "en": ["Algorithm", "Drawing", "Song"] }, "answer": 0,
+          "why": { "es": "Un algoritmo son los pasos ordenados de una tarea.", "en": "An algorithm is the ordered steps of a task." } }
+      ]
+    }
+  ]
+}

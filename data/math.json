@@ -1,0 +1,35 @@
+{
+  "subject": "math",
+  "icon": "🔢",
+  "name": { "es": "Matemáticas", "en": "Math" },
+  "levels": [
+    {
+      "title": { "es": "Contar y sumar", "en": "Counting & adding" },
+      "items": [
+        { "q": { "es": "¿Cuánto es 2 + 3?", "en": "What is 2 + 3?" },
+          "options": { "es": ["4", "5", "6"], "en": ["4", "5", "6"] }, "answer": 1,
+          "why": { "es": "2 + 3 = 5. ¡Sumar es juntar!", "en": "2 + 3 = 5. Adding means putting together!" } },
+        { "q": { "es": "¿Cuánto es 7 + 5?", "en": "What is 7 + 5?" },
+          "options": { "es": ["11", "12", "13"], "en": ["11", "12", "13"] }, "answer": 1,
+          "why": { "es": "7 + 5 = 12. ¡Pasa de diez por dos!", "en": "7 + 5 = 12. Two past ten!" } },
+        { "q": { "es": "¿Cuántos lados tiene un cuadrado?", "en": "How many sides does a square have?" },
+          "options": { "es": ["3", "4", "5"], "en": ["3", "4", "5"] }, "answer": 1,
+          "why": { "es": "Un cuadrado tiene 4 lados iguales.", "en": "A square has 4 equal sides." } }
+      ]
+    },
+    {
+      "title": { "es": "Restar y multiplicar", "en": "Subtract & multiply" },
+      "items": [
+        { "q": { "es": "¿Cuánto es 9 - 4?", "en": "What is 9 - 4?" },
+          "options": { "es": ["4", "5", "6"], "en": ["4", "5", "6"] }, "answer": 1,
+          "why": { "es": "9 - 4 = 5. Restar es quitar.", "en": "9 - 4 = 5. Subtracting means taking away." } },
+        { "q": { "es": "¿Cuánto es 4 × 2?", "en": "What is 4 × 2?" },
+          "options": { "es": ["6", "8", "10"], "en": ["6", "8", "10"] }, "answer": 1,
+          "why": { "es": "4 × 2 es 4 + 4 = 8.", "en": "4 × 2 is 4 + 4 = 8." } },
+        { "q": { "es": "¿Cuánto es 10 ÷ 2?", "en": "What is 10 ÷ 2?" },
+          "options": { "es": ["4", "5", "6"], "en": ["4", "5", "6"] }, "answer": 1,
+          "why": { "es": "10 ÷ 2 = 5. Repartir en dos partes iguales.", "en": "10 ÷ 2 = 5. Sharing into two equal parts." } }
+      ]
+    }
+  ]
+}

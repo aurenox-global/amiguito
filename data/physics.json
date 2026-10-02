@@ -1,0 +1,35 @@
+{
+  "subject": "physics",
+  "icon": "🧲",
+  "name": { "es": "Física", "en": "Physics" },
+  "levels": [
+    {
+      "title": { "es": "Fuerzas y movimiento", "en": "Forces & motion" },
+      "items": [
+        { "q": { "es": "¿Qué hace la gravedad?", "en": "What does gravity do?" },
+          "options": { "es": ["Tira hacia abajo", "Empuja hacia arriba", "Apaga la luz"], "en": ["Pulls things down", "Pushes things up", "Turns off the light"] }, "answer": 0,
+          "why": { "es": "La gravedad tira de todo hacia el suelo.", "en": "Gravity pulls everything towards the ground." } },
+        { "q": { "es": "¿Qué necesita una pelota para moverse?", "en": "What does a ball need to move?" },
+          "options": { "es": ["Una fuerza", "Un color", "Un sonido"], "en": ["A force", "A color", "A sound"] }, "answer": 0,
+          "why": { "es": "Sin fuerza, las cosas quietas siguen quietas.", "en": "Without a force, still things stay still." } },
+        { "q": { "es": "Si das una patada a un balón, ¿qué pasa?", "en": "If you kick a ball, what happens?" },
+          "options": { "es": ["Se mueve", "Desaparece", "Se enfría"], "en": ["It moves", "It disappears", "It cools down"] }, "answer": 0,
+          "why": { "es": "Tu patada es una fuerza que lo empuja.", "en": "Your kick is a force that pushes it." } }
+      ]
+    },
+    {
+      "title": { "es": "Luz y sonido", "en": "Light & sound" },
+      "items": [
+        { "q": { "es": "¿Cómo viaja la luz?", "en": "How does light travel?" },
+          "options": { "es": ["En línea recta", "En círculos", "Solo de noche"], "en": ["In straight lines", "In circles", "Only at night"] }, "answer": 0,
+          "why": { "es": "La luz viaja en línea recta muy rápido.", "en": "Light travels in straight lines, very fast." } },
+        { "q": { "es": "El sonido son…", "en": "Sound is made of…" },
+          "options": { "es": ["Vibraciones", "Colores", "Olores"], "en": ["Vibrations", "Colors", "Smells"] }, "answer": 0,
+          "why": { "es": "El sonido son vibraciones que viajan por el aire.", "en": "Sound is vibrations travelling through the air." } },
+        { "q": { "es": "¿Qué nos da el Sol?", "en": "What does the Sun give us?" },
+          "options": { "es": ["Luz y calor", "Agua", "Piedras"], "en": ["Light and heat", "Water", "Stones"] }, "answer": 0,
+          "why": { "es": "El Sol nos da luz y calor cada día.", "en": "The Sun gives us light and heat every day." } }
+      ]
+    }
+  ]
+}

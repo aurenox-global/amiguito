@@ -83,6 +83,8 @@ export class Creature {
     );
     shadow.rotation.x = -Math.PI / 2;
     shadow.position.y = 0.02;
+    // La sombra NO debe detectar toques: si no, cuenta como "caricia" al tocar el suelo alrededor.
+    shadow.raycast = () => {};
     this.shadow = shadow;
     g.add(shadow);
 
@@ -101,6 +103,13 @@ export class Creature {
       clearcoat: 0.85, clearcoatRoughness: 0.16
     });
     const darkMat = new THREE.MeshStandardMaterial({ color: DARK, roughness: 0.5, metalness: 0.6 });
+    this._matBody = bodyMat;
+    // materiales compartidos de los ojos (para poder personalizarlos)
+    this._matEye = new THREE.MeshStandardMaterial({ color: 0x1a5fb0, emissive: 0x1f5fc0, emissiveIntensity: 0.55, roughness: 0.35 });
+    this._matRing = new THREE.MeshBasicMaterial({ color: 0x7bd8ff });
+    this._matHalo = new THREE.MeshBasicMaterial({ color: 0x2e7fe0, transparent: true, opacity: 0.20, blending: THREE.AdditiveBlending, depthWrite: false });
+    this._matPupil = new THREE.MeshBasicMaterial({ color: 0x9fe4ff });
+    this.bodyColor = ORANGE; this.eyeColor = 0x1a5fb0;
 
     // ── cuerpo: esfera naranja brillante ──
     const headMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 48), bodyMat);
@@ -150,17 +159,13 @@ export class Creature {
       eye.position.copy(n).multiplyScalar(1.035);
       eye.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), n);
 
-      const halo = new THREE.Mesh(new THREE.CircleGeometry(0.215, 40),
-        new THREE.MeshBasicMaterial({ color: 0x2e7fe0, transparent: true, opacity: 0.20, blending: THREE.AdditiveBlending, depthWrite: false }));
+      const halo = new THREE.Mesh(new THREE.CircleGeometry(0.215, 40), this._matHalo);
       eye.add(halo);
-      const ring = new THREE.Mesh(new THREE.RingGeometry(0.150, 0.195, 48),
-        new THREE.MeshBasicMaterial({ color: 0x7bd8ff }));
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.150, 0.195, 48), this._matRing);
       eye.add(ring);
-      const iris = new THREE.Mesh(new THREE.CircleGeometry(0.150, 40),
-        new THREE.MeshStandardMaterial({ color: 0x1a5fb0, emissive: 0x1f5fc0, emissiveIntensity: 0.55, roughness: 0.35 }));
+      const iris = new THREE.Mesh(new THREE.CircleGeometry(0.150, 40), this._matEye);
       eye.add(iris);
-      const pupil = new THREE.Mesh(new THREE.CircleGeometry(0.070, 28),
-        new THREE.MeshBasicMaterial({ color: 0x9fe4ff }));
+      const pupil = new THREE.Mesh(new THREE.CircleGeometry(0.070, 28), this._matPupil);
       pupil.position.set(0, 0, 0.012);
       eye.add(pupil);
 
@@ -233,6 +238,53 @@ export class Creature {
   setLook(nx, ny) {
     this.lookTarget.x = clamp(nx, -1, 1);
     this.lookTarget.y = clamp(ny, -1, 1);
+  }
+
+  // Personalización: color del cuerpo y de los ojos.
+  setPalette(p = {}) {
+    if (p.body != null) { this.bodyColor = p.body; this._matBody.color.setHex(p.body); }
+    if (p.eye != null) {
+      this.eyeColor = p.eye;
+      this._matEye.color.setHex(p.eye);
+      this._matEye.emissive.setHex(p.eye);
+      this._matRing.color.setHex(p.eye);
+      this._matHalo.color.setHex(p.eye);
+      // pupila un poco más clara que el ojo
+      const c = new THREE.Color(p.eye).lerp(new THREE.Color(0xffffff), 0.55);
+      this._matPupil.color.copy(c);
+    }
+  }
+
+  // Accesorio: none | gorro | corona | lazo
+  setAccessory(name = 'none') {
+    if (this.acc) { this.head.remove(this.acc); this.acc = null; }
+    this.accessory = name || 'none';
+    if (this.accessory === 'none') return;
+    const g = new THREE.Group();
+    if (name === 'gorro') {
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.68, 24), new THREE.MeshStandardMaterial({ color: 0xff5da2, roughness: 0.4 }));
+      cone.position.y = 0.34; g.add(cone);
+      const ball = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 12), new THREE.MeshStandardMaterial({ color: 0xffe08a }));
+      ball.position.y = 0.72; g.add(ball);
+    } else if (name === 'corona') {
+      const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.34, 0.16, 24, 1, true), new THREE.MeshStandardMaterial({ color: 0xffd24a, metalness: 0.6, roughness: 0.25, side: THREE.DoubleSide }));
+      ring.position.y = 0.2; g.add(ring);
+      for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * Math.PI * 2;
+        const sp = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.22, 12), new THREE.MeshStandardMaterial({ color: 0xffd24a, metalness: 0.6, roughness: 0.25 }));
+        sp.position.set(Math.cos(a) * 0.3, 0.36, Math.sin(a) * 0.3); g.add(sp);
+      }
+    } else if (name === 'lazo') {
+      const mat = new THREE.MeshStandardMaterial({ color: 0xff6fb0, roughness: 0.4 });
+      for (const sx of [-1, 1]) {
+        const loop = new THREE.Mesh(new THREE.SphereGeometry(0.16, 20, 16), mat);
+        loop.scale.set(1, 0.8, 0.5); loop.position.set(0.15 * sx, 0.24, 0); g.add(loop);
+      }
+      const knot = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 12), mat); knot.position.y = 0.24; g.add(knot);
+    }
+    g.position.y = 0.72;
+    this.head.add(g);
+    this.acc = g;
   }
 
   play(name) {

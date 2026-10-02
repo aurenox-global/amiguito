@@ -1,0 +1,35 @@
+{
+  "subject": "language",
+  "icon": "🗣️",
+  "name": { "es": "Lengua", "en": "Language" },
+  "levels": [
+    {
+      "title": { "es": "Ortografía", "en": "Spelling" },
+      "items": [
+        { "q": { "es": "¿Cómo se escribe bien?", "en": "Which one is spelled correctly?" },
+          "options": { "es": ["Vaca", "Baca", "Vacca"], "en": ["House", "Hous", "Houze"] }, "answer": 0,
+          "why": { "es": "\"Vaca\" se escribe con V de vaca 🐄", "en": "\"House\" se escribe H-O-U-S-E." } },
+        { "q": { "es": "¿Con qué letra empieza \"sol\"?", "en": "Which letter does \"ball\" start with?" },
+          "options": { "es": ["M", "S", "L"], "en": ["B", "C", "D"] }, "answer": 1,
+          "why": { "es": "¡Con la S! Sss… sol ☀️", "en": "With B! B… ball ⚽" } },
+        { "q": { "es": "¿Cuál está bien escrita?", "en": "Which one is correct?" },
+          "options": { "es": ["Grande", "Grandee", "Grandd"], "en": ["Friend", "Frend", "Freind"] }, "answer": 0,
+          "why": { "es": "\"Grande\" se escribe con una sola e final.", "en": "\"Friend\" — we write the I before the E here." } }
+      ]
+    },
+    {
+      "title": { "es": "Palabras y vocabulario", "en": "Words & vocabulary" },
+      "items": [
+        { "q": { "es": "¿Cuál de estas palabras es un sustantivo (una cosa)?", "en": "Which of these words is a noun (a thing)?" },
+          "options": { "es": ["Mesa", "Correr", "Rápido"], "en": ["Table", "Run", "Quick"] }, "answer": 0,
+          "why": { "es": "Mesa es una cosa; correr es un verbo.", "en": "Table is a thing; run is a verb." } },
+        { "q": { "es": "El plural de \"luz\" es…", "en": "The plural of \"box\" is…" },
+          "options": { "es": ["Luces", "Luzes", "Luzs"], "en": ["Boxes", "Boxs", "Boxen"] }, "answer": 0,
+          "why": { "es": "Las palabras acabadas en z hacen el plural en -ces.", "en": "Words ending in -x add -es." } },
+        { "q": { "es": "¿Cuál de estas palabras es un verbo (una acción)?", "en": "Which of these words is a verb (an action)?" },
+          "options": { "es": ["Saltar", "Azul", "Árbol"], "en": ["Jump", "Blue", "Tree"] }, "answer": 0,
+          "why": { "es": "Saltar es algo que se hace.", "en": "Jump is something you do." } }
+      ]
+    }
+  ]
+}

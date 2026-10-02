@@ -77,6 +77,24 @@ export const LESSONS = [
 
 export const CATEGORIES = ['colors', 'numbers', 'math', 'animals', 'science', 'words', 'letters'];
 
+// Materias del "colegio" de Amiguito. Cada una vive en data/<id>.json (bilingüe).
+export const SUBJECTS = [
+  { id: 'basics', icon: '🌟', name: { es: 'Básicos', en: 'Basics' } },
+  { id: 'math', icon: '🔢', name: { es: 'Matemáticas', en: 'Math' } },
+  { id: 'physics', icon: '🧲', name: { es: 'Física', en: 'Physics' } },
+  { id: 'chemistry', icon: '⚗️', name: { es: 'Química', en: 'Chemistry' } },
+  { id: 'programming', icon: '💻', name: { es: 'Programación', en: 'Programming' } },
+  { id: 'language', icon: '🗣️', name: { es: 'Lengua', en: 'Language' } }
+];
+
+// Carga la "base de datos" de una materia desde /data/<id>.json
+export async function loadSubject(id) {
+  const url = new URL(`../data/${id}.json`, import.meta.url);
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error('materia no disponible: ' + id);
+  return res.json();
+}
+
 // Baraja las opciones manteniendo la respuesta correcta.
 export function shuffledOptions(lesson, lang) {
   const opts = lesson.opts[lang] || lesson.opts.es;
