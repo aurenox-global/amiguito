@@ -5,7 +5,7 @@ export class Voice {
   constructor({ lang = 'es' } = {}) {
     this.lang = lang;
     this.enabled = true;
-    this.pitch = 1.15;   // claro pero algo agudo (antes 1.4 = demasiado "chipmunk")
+    this.pitch = 1.25;   // voz clarita, tirando a infantil (Web Speech; los mp3 propios son aparte)
     this.rate = 1.0;
     this.volume = 1;
     this.voiceURI = null; // voz elegida por el usuario (persistente)
@@ -54,7 +54,7 @@ export class Voice {
     if (!pool.length) return null; // NO usar una voz de otro idioma: sonaría ininteligible
     const exact = pool.filter((v) => v.lang.toLowerCase().replace('_', '-') === this._bcp(lang).toLowerCase());
     const cand = exact.length ? exact : pool;
-    const friendly = cand.find((v) => /natural|neural|premium|enhanced|google|female|mujer|m[óo]nica|helena|laura|sabina|zira|aria|jenny|elvira|dalia/i.test(v.name));
+    const friendly = cand.find((v) => /natural|neural|premium|enhanced|google|female|mujer|woman|m[óo]nica|helena|laura|sabina|zira|aria|jenny|elvira|dalia|paulina|marisol|carmen|luc[íi]a|sof[íi]a|isabela|valentina|alejandra|camila|mia|emma/i.test(v.name));
     return friendly || cand[0];
   }
 
