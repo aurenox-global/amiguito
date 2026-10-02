@@ -1,26 +1,58 @@
 // La criatura 3D: se construye por completo con geometrías de Three.js (sin modelos externos,
 // así nunca falla por un archivo que falte). Expone update() para las animaciones.
+//
+// Diseño: robot flotante esférico (naranja brillante) con visor negro y ojos azules, bracitos
+// cortos con manitas de 3 dedos y una tobera oscura debajo. Flota sobre la plataforma.
 import * as THREE from '../vendor/three.module.js';
 
-const mat = (color, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.55, metalness: 0.04 }, o));
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const easeOutBack = (t) => 1 + 2.7 * Math.pow(t - 1, 3) + 1.7 * Math.pow(t - 1, 2);
-const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
 const ONE_SHOTS = { pop: 0.5, hop: 0.75, spin: 0.9, shake: 0.6, nod: 0.7, eat: 1.1, cheer: 1.2, sad: 1.4 };
+
+// Color del cuerpo y materiales compartidos
+const ORANGE = 0xfa9720;
+const DARK = 0x24242a;
 
 function radialTexture() {
   const c = document.createElement('canvas');
   c.width = c.height = 128;
   const ctx = c.getContext('2d');
   const g = ctx.createRadialGradient(64, 64, 4, 64, 64, 62);
-  g.addColorStop(0, 'rgba(18,58,51,0.42)');
-  g.addColorStop(0.55, 'rgba(18,58,51,0.18)');
-  g.addColorStop(1, 'rgba(18,58,51,0)');
+  g.addColorStop(0, 'rgba(40,22,4,0.40)');
+  g.addColorStop(0.55, 'rgba(40,22,4,0.17)');
+  g.addColorStop(1, 'rgba(40,22,4,0)');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, 128, 128);
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+// Rounded-rect negro (visor) sobre fondo transparente: se mapea sobre un casquete esférico.
+function visorTexture() {
+  const w = 512, h = 340, m = 26, r = 96;
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  const x = m, y = m, ww = w - m * 2, hh = h - m * 2;
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + ww, y, x + ww, y + hh, r);
+  ctx.arcTo(x + ww, y + hh, x, y + hh, r);
+  ctx.arcTo(x, y + hh, x, y, r);
+  ctx.arcTo(x, y, x + ww, y, r);
+  ctx.closePath();
+  const g = ctx.createLinearGradient(0, y, 0, y + hh);
+  g.addColorStop(0, 'rgba(26,20,17,1)');
+  g.addColorStop(0.45, 'rgba(9,8,11,1)');
+  g.addColorStop(1, 'rgba(28,22,19,1)');
+  ctx.fillStyle = g; ctx.fill();
+  // brillo sutil superior (cristal)
+  ctx.globalAlpha = 0.12; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 7; ctx.stroke();
+  ctx.globalAlpha = 1;
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 4;
   return t;
 }
 
@@ -30,10 +62,10 @@ export class Creature {
     this.t = 0;
     this.blink = 0;
     this.nextBlink = 1.6 + Math.random() * 2.4;
-    this.look = { x: 0, y: 0 };      // suavizado
-    this.lookTarget = { x: 0, y: 0 }; // objetivo (-1..1)
-    this.act = null;                  // one-shot en curso
-    this.baseY = 1.02;
+    this.look = { x: 0, y: 0 };
+    this.lookTarget = { x: 0, y: 0 };
+    this.act = null;
+    this.baseY = 1.34;
     this.mood = 0.8;
     this.sleeping = false;
     this._build();
@@ -42,9 +74,9 @@ export class Creature {
   _build() {
     const g = this.root;
 
-    // sombra de contacto (no escala con el "squash")
+    // ── sombra de contacto ──
     const shadow = new THREE.Mesh(
-      new THREE.PlaneGeometry(3.1, 3.1),
+      new THREE.PlaneGeometry(3.0, 3.0),
       new THREE.MeshBasicMaterial({ map: radialTexture(), transparent: true, depthWrite: false })
     );
     shadow.rotation.x = -Math.PI / 2;
@@ -57,110 +89,136 @@ export class Creature {
     this.body = body;
     g.add(body);
 
-    // ── cabeza (es el propio cuerpo, tipo blob) ──
     const head = new THREE.Group();
     this.head = head;
     body.add(head);
 
-    const headMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 36), mat(0x8ee3c8, { roughness: 0.48 }));
-    headMesh.scale.set(1, 0.95, 0.97);
+    // ── materiales ──
+    const bodyMat = new THREE.MeshPhysicalMaterial({
+      color: ORANGE, roughness: 0.32, metalness: 0.10,
+      clearcoat: 0.85, clearcoatRoughness: 0.16
+    });
+    const darkMat = new THREE.MeshStandardMaterial({ color: DARK, roughness: 0.5, metalness: 0.6 });
+
+    // ── cuerpo: esfera naranja brillante ──
+    const headMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 48), bodyMat);
+    headMesh.scale.set(1, 0.99, 1);
     headMesh.castShadow = true;
     headMesh.receiveShadow = true;
     head.add(headMesh);
     this.headMesh = headMesh;
 
-    const belly = new THREE.Mesh(new THREE.SphereGeometry(0.7, 32, 24), mat(0xf8fceb, { roughness: 0.75 }));
-    belly.scale.set(1, 0.92, 0.42);
-    belly.position.set(0, -0.2, 0.66);
-    head.add(belly);
+    // costura del ecuador (línea fina)
+    const seam = new THREE.Mesh(
+      new THREE.TorusGeometry(0.998, 0.010, 8, 96),
+      new THREE.MeshStandardMaterial({ color: 0xbb6316, roughness: 0.6, metalness: 0.2 })
+    );
+    seam.rotation.x = Math.PI / 2;
+    seam.position.y = -0.06;
+    head.add(seam);
 
-    // ojos
+    // ── tobera debajo (flota) ──
+    const nozzle = new THREE.Mesh(new THREE.SphereGeometry(0.34, 40, 28), darkMat);
+    nozzle.scale.set(1, 0.6, 1);
+    nozzle.position.set(0, -0.92, 0);
+    nozzle.castShadow = true;
+    head.add(nozzle);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.032, 10, 48),
+      new THREE.MeshStandardMaterial({ color: 0x51515a, roughness: 0.4, metalness: 0.7 }));
+    ring.rotation.x = Math.PI / 2;
+    ring.position.y = -0.89;
+    head.add(ring);
+
+    // ── visor: casquete esférico con textura de rectángulo redondeado ──
+    const vGeo = new THREE.SphereGeometry(1.02, 64, 48,
+      Math.PI / 2 - 0.80, 1.60,      // phi: centrado en +Z
+      Math.PI / 2 - 0.50, 1.00);     // theta: banda frontal
+    const visor = new THREE.Mesh(vGeo, new THREE.MeshStandardMaterial({
+      map: visorTexture(), transparent: true, roughness: 0.12, metalness: 0.35,
+      color: 0xffffff, side: THREE.DoubleSide
+    }));
+    visor.renderOrder = 1;
+    head.add(visor);
+
+    // ── ojos: anillos azules que siguen al cursor ──
     this.eyes = [];
     for (const sx of [-1, 1]) {
+      const n = new THREE.Vector3(0.36 * sx, 0.16, 0.92).normalize();
       const eye = new THREE.Group();
-      eye.position.set(0.34 * sx, 0.17, 0.845);
-      eye.lookAt(0, 0.17, 3); // mirar al frente
-      const sclera = new THREE.Mesh(new THREE.SphereGeometry(0.27, 32, 24), mat(0xffffff, { roughness: 0.25 }));
-      sclera.scale.set(1, 1.06, 0.72);
-      eye.add(sclera);
-      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.135, 24, 18), mat(0x17323b, { roughness: 0.2 }));
-      pupil.position.set(0, 0, 0.2);
+      eye.position.copy(n).multiplyScalar(1.035);
+      eye.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), n);
+
+      const halo = new THREE.Mesh(new THREE.CircleGeometry(0.215, 40),
+        new THREE.MeshBasicMaterial({ color: 0x2e7fe0, transparent: true, opacity: 0.20, blending: THREE.AdditiveBlending, depthWrite: false }));
+      eye.add(halo);
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.150, 0.195, 48),
+        new THREE.MeshBasicMaterial({ color: 0x7bd8ff }));
+      eye.add(ring);
+      const iris = new THREE.Mesh(new THREE.CircleGeometry(0.150, 40),
+        new THREE.MeshStandardMaterial({ color: 0x1a5fb0, emissive: 0x1f5fc0, emissiveIntensity: 0.55, roughness: 0.35 }));
+      eye.add(iris);
+      const pupil = new THREE.Mesh(new THREE.CircleGeometry(0.070, 28),
+        new THREE.MeshBasicMaterial({ color: 0x9fe4ff }));
+      pupil.position.set(0, 0, 0.012);
       eye.add(pupil);
-      const glint = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 10), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-      glint.position.set(0.06, 0.07, 0.29);
-      eye.add(glint);
+
+      eye.renderOrder = 2;
       head.add(eye);
       this.eyes.push({ group: eye, pupil, base: eye.position.clone() });
     }
 
-    // mejillas
-    for (const sx of [-1, 1]) {
-      const cheek = new THREE.Mesh(new THREE.SphereGeometry(0.16, 20, 16), mat(0xff9ec4, { roughness: 0.9, transparent: true, opacity: 0.72 }));
-      cheek.scale.set(1.15, 0.7, 0.3);
-      cheek.position.set(0.62 * sx, -0.16, 0.72);
-      head.add(cheek);
-    }
-
-    // boca (arco que se abre/cierra): torus semicircular
-    const mouth = new THREE.Mesh(
-      new THREE.TorusGeometry(0.19, 0.032, 10, 28, Math.PI),
-      mat(0x17323b, { roughness: 0.4 })
-    );
-    mouth.rotation.z = Math.PI;
-    mouth.position.set(0, -0.18, 0.9);
+    // boca (oculta: el diseño no lleva, pero se mantiene por compatibilidad de animaciones)
+    const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.03, 8, 20, Math.PI),
+      new THREE.MeshBasicMaterial({ color: 0x101010 }));
+    mouth.visible = false;
+    mouth.position.set(0, -0.2, 0.9);
     this.mouth = mouth;
     head.add(mouth);
 
-    // antenas
+    // sin antenas ni cola en este diseño (se conservan vacíos por compatibilidad)
     this.antenna = [];
-    for (const sx of [-1, 1]) {
-      const a = new THREE.Group();
-      a.position.set(0.24 * sx, 0.88, 0.06);
-      a.rotation.z = -0.35 * sx;
-      const stalk = new THREE.Mesh(new THREE.CapsuleGeometry(0.035, 0.34, 6, 12), mat(0x7fd6ba));
-      stalk.position.y = 0.2;
-      a.add(stalk);
-      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.1, 20, 16),
-        mat(0xffe08a, { emissive: 0xffcf5c, emissiveIntensity: 0.5, roughness: 0.3 }));
-      bulb.position.y = 0.42;
-      a.add(bulb);
-      head.add(a);
-      this.antenna.push(a);
-    }
+    this.tail = new THREE.Group();
+    body.add(this.tail);
+    this.feet = [];
 
-    // bracitos
+    // ── bracitos con manitas de 3 dedos ──
     this.arms = [];
     for (const sx of [-1, 1]) {
-      const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.13, 0.3, 6, 14), mat(0x8ee3c8));
-      arm.position.set(0.92 * sx, -0.08, 0.06);
-      arm.rotation.z = 0.5 * sx;
-      arm.castShadow = true;
+      const arm = new THREE.Group();
+      arm.position.set(0.86 * sx, -0.04, 0.06);
+      arm.userData.sx = sx;
+      arm.userData.wave = (sx === -1); // el brazo izquierdo saluda
+
+      const upper = new THREE.Mesh(new THREE.SphereGeometry(0.31, 32, 24), bodyMat);
+      upper.scale.set(1.25, 1.0, 1.0);
+      upper.position.set(0.30 * sx, 0, 0);
+      upper.castShadow = true;
+      arm.add(upper);
+
+      const hand = new THREE.Mesh(new THREE.SphereGeometry(0.215, 28, 22), bodyMat);
+      hand.position.set(0.63 * sx, 0, 0.02);
+      hand.castShadow = true;
+      arm.add(hand);
+
+      for (let k = -1; k <= 1; k++) {
+        const f = new THREE.Group();
+        f.position.set(0.82 * sx, 0.02 * k, 0.03);
+        f.rotation.z = 0.52 * k * sx;
+        f.rotation.y = -0.6 * k * sx;
+        const seg = new THREE.Mesh(new THREE.CapsuleGeometry(0.05, 0.15, 6, 10), bodyMat);
+        seg.rotation.z = Math.PI / 2;
+        seg.position.set(0.10, 0, 0);
+        f.add(seg);
+        const tip = new THREE.Mesh(new THREE.CapsuleGeometry(0.054, 0.06, 6, 10), darkMat);
+        tip.rotation.z = Math.PI / 2;
+        tip.position.set(0.21, 0, 0);
+        f.add(tip);
+        arm.add(f);
+      }
+
       body.add(arm);
       this.arms.push(arm);
     }
-
-    // pies
-    this.feet = [];
-    for (const sx of [-1, 1]) {
-      const foot = new THREE.Mesh(new THREE.SphereGeometry(0.26, 24, 18), mat(0x74d3b4, { roughness: 0.6 }));
-      foot.scale.set(1, 0.62, 1.25);
-      foot.position.set(0.42 * sx, -0.92, 0.2);
-      foot.castShadow = true;
-      body.add(foot);
-      this.feet.push(foot);
-    }
-
-    // colita
-    this.tail = new THREE.Group();
-    this.tail.position.set(0, -0.35, -0.9);
-    const tailMesh = new THREE.Mesh(new THREE.SphereGeometry(0.22, 20, 16), mat(0x8ee3c8));
-    tailMesh.scale.set(0.6, 0.6, 1.4);
-    tailMesh.position.z = -0.25;
-    this.tail.add(tailMesh);
-    const tailTip = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 12), mat(0xffe08a, { emissive: 0xffcf5c, emissiveIntensity: 0.35 }));
-    tailTip.position.z = -0.5;
-    this.tail.add(tailTip);
-    body.add(this.tail);
   }
 
   setLook(nx, ny) {
@@ -192,25 +250,23 @@ export class Creature {
     this.look.x += (this.lookTarget.x - this.look.x) * Math.min(1, dt * 5);
     this.look.y += (this.lookTarget.y - this.look.y) * Math.min(1, dt * 5);
 
-    // respiración / flotación
+    // respiración / flotación (levita)
     const breathSpeed = sleeping ? 1.1 : 2.1;
     const breathAmt = sleeping ? 0.055 : 0.032;
     const bob = Math.sin(t * breathSpeed) * breathAmt;
     this.body.scale.set(1 + bob * 0.5, 1 + bob, 1 + bob * 0.5);
-    this.body.position.y = this.baseY + (sleeping ? Math.sin(t * 1.1) * 0.02 : Math.abs(Math.sin(t * 1.4)) * 0.03);
+    this.body.position.y = this.baseY + (sleeping ? Math.sin(t * 1.1) * 0.03 : Math.sin(t * 1.5) * 0.05);
 
-    // caminar: pequeño salto
-    if (moving) this.body.position.y += Math.abs(Math.sin(t * 7)) * 0.12;
+    // desplazarse: rebote suave
+    if (moving) this.body.position.y += Math.abs(Math.sin(t * 7)) * 0.10;
 
     // cabeza: sigue el cursor + balanceo
-    this.head.rotation.y = this.look.x * 0.28 + Math.sin(t * 0.7) * 0.03;
-    this.head.rotation.x = -this.look.y * 0.16 + (sleeping ? 0.18 : Math.sin(t * 0.9) * 0.02);
+    this.head.rotation.y = this.look.x * 0.26 + Math.sin(t * 0.7) * 0.03;
+    this.head.rotation.x = -this.look.y * 0.15 + (sleeping ? 0.16 : Math.sin(t * 0.9) * 0.02);
     this.head.rotation.z = Math.sin(t * 1.1) * 0.02;
 
-    // ojos: pupila sigue + párpados
-    const blinkScale = sleeping ? 0.06 : (this.blink > 0 ? 0.08 + Math.abs(Math.sin((1 - this.blink / 0.13) * Math.PI)) * 0.4 : 1);
-    // (blink: 1 -> cerrado -> 1). Simplificamos: si parpadeando, escala baja.
-    const blinkY = sleeping ? 0.07 : (this.blink > 0 ? 0.1 : 1);
+    // ojos: parpadeo (se aplastan) + la pupila sigue al cursor
+    const blinkY = sleeping ? 0.08 : (this.blink > 0 ? 0.12 : 1);
     for (let i = 0; i < this.eyes.length; i++) {
       const e = this.eyes[i];
       e.group.scale.y = blinkY * (1 + bob * 0.3);
@@ -218,31 +274,19 @@ export class Creature {
       e.pupil.position.y = -this.look.y * 0.045;
     }
 
-    // boca: sonrisa según ánimo; abierta si come
-    const joy = clamp((this.mood - 0.4) / 0.6, 0, 1);
-    let mouthScale = 0.8 + joy * 0.5;
-    this.mouth.rotation.z = Math.PI;
-    this.mouth.scale.set(1, mouthScale, 1);
-    this.mouth.position.y = -0.18;
-    if (sleeping) { this.mouth.scale.set(0.7, 0.25, 1); }
-
-    // antenas: ondulan
-    for (let i = 0; i < this.antenna.length; i++) {
-      const a = this.antenna[i];
-      const sx = i === 0 ? -1 : 1;
-      a.rotation.z = -0.35 * sx + Math.sin(t * 2.3 + i) * 0.12;
-      a.rotation.x = Math.cos(t * 2.0 + i * 1.7) * 0.1;
-    }
-
-    // bracitos
+    // bracitos: uno saluda, el otro se balancea
     for (let i = 0; i < this.arms.length; i++) {
-      const sx = i === 0 ? -1 : 1;
-      this.arms[i].rotation.z = 0.5 * sx + Math.sin(t * 2.0 + i * 2) * 0.08;
-      this.arms[i].position.y = -0.08 + Math.sin(t * 2.0 + i * 2) * 0.02;
+      const arm = this.arms[i];
+      const sx = arm.userData.sx;
+      if (arm.userData.wave && !sleeping) {
+        arm.rotation.z = -1.12 + Math.sin(t * 5.5) * 0.26;
+        arm.rotation.x = 0.10 + Math.cos(t * 5.5) * 0.12;
+      } else {
+        arm.rotation.z = -0.38 * sx + Math.sin(t * 1.9 + i) * 0.09;
+        arm.rotation.x = Math.sin(t * 1.5 + i * 1.3) * 0.10;
+      }
+      arm.position.y = -0.04 + Math.sin(t * 2.0 + i * 2) * 0.02;
     }
-
-    // colita
-    this.tail.rotation.y = Math.sin(t * 3.1) * (0.25 + joy * 0.35);
 
     // one-shot
     if (this.act) {
@@ -252,11 +296,9 @@ export class Creature {
       if (p >= 1) { this.act = null; this.body.rotation.set(0, 0, 0); this.body.scale.set(1, 1, 1); }
     }
 
-    // cara triste/baja
+    // ánimo bajo
     if (this.mood < 0.4 && !sleeping && !this.act) {
       this.head.position.y = -0.05 + Math.sin(t * 1.2) * 0.01;
-      this.mouth.rotation.z = Math.PI;
-      this.mouth.scale.set(1, 0.2, 1);
       this.body.rotation.z = Math.sin(t * 0.8) * 0.03;
     } else {
       this.head.position.y = this.head.position.y * 0.9;
@@ -265,7 +307,7 @@ export class Creature {
 
   _applyOneShot(name, p, dt) {
     const body = this.body;
-    const up = Math.sin(Math.PI * p); // 0->1->0
+    const up = Math.sin(Math.PI * p);
     switch (name) {
       case 'pop':
       case 'hop': {
@@ -295,7 +337,6 @@ export class Creature {
       case 'eat': {
         const chew = Math.abs(Math.sin(p * Math.PI * 6));
         body.scale.set(1 + chew * 0.06, 1 - chew * 0.08, 1 + chew * 0.06);
-        this.mouth.scale.set(1 + chew * 0.5, 0.5 + chew, 1);
         body.position.y += Math.abs(Math.sin(p * Math.PI * 3)) * 0.06;
         break;
       }
