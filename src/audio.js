@@ -5,7 +5,7 @@
 //
 // AUDIO_VERSION: súbelo cada vez que regeneres los audios para romper la caché
 // del navegador/CDN (los .mp3 tienen la misma URL, así que sin esto pueden quedar cacheados).
-const AUDIO_VERSION = '4';
+const AUDIO_VERSION = '5';
 
 export class Sound {
   constructor() {

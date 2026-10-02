@@ -28,7 +28,8 @@ while IFS=$'\t' read -r lang id text; do
   if [ "$lang" = "en" ]; then voice="$VOICES/$EN_VOICE"; else voice="$VOICES/$ES_VOICE"; fi
   mkdir -p "assets/audio/$lang"
   printf '%s' "$text" | "$PIPER" -m "$voice" -f /tmp/_amg.wav 2>/dev/null
-  ffmpeg -v error -y -i /tmp/_amg.wav \
+  # IMPORTANTE: -nostdin evita que ffmpeg consuma el fichero de frases (bucle) desde stdin
+  ffmpeg -nostdin -v error -y -i /tmp/_amg.wav \
     -filter:a "rubberband=pitch=${PITCH}:tempo=${TEMPO}" \
     -ar 22050 -ac 1 -c:a libmp3lame -b:a 96k "assets/audio/$lang/$id.mp3"
 done < /tmp/phrases.tsv
