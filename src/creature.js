@@ -68,6 +68,8 @@ export class Creature {
     this.baseY = 1.34;
     this.mood = 0.8;
     this.sleeping = false;
+    this.wave = 0;                       // saludo en curso
+    this.nextWave = 3 + Math.random() * 4; // saluda de vez en cuando, no siempre
     this._build();
   }
 
@@ -181,37 +183,44 @@ export class Creature {
     body.add(this.tail);
     this.feet = [];
 
-    // ── bracitos con manitas de 3 dedos ──
+    // ── bracitos con manitas de 3 dedos (pinza) ──
     this.arms = [];
     for (const sx of [-1, 1]) {
       const arm = new THREE.Group();
-      arm.position.set(0.86 * sx, -0.04, 0.06);
+      arm.position.set(0.86 * sx, -0.05, 0.06);
       arm.userData.sx = sx;
-      arm.userData.wave = (sx === -1); // el brazo izquierdo saluda
+      arm.userData.wave = (sx === -1); // este brazo saluda de vez en cuando
 
-      const upper = new THREE.Mesh(new THREE.SphereGeometry(0.31, 32, 24), bodyMat);
-      upper.scale.set(1.25, 1.0, 1.0);
-      upper.position.set(0.30 * sx, 0, 0);
+      // hombro (se funde con el cuerpo)
+      const shoulder = new THREE.Mesh(new THREE.SphereGeometry(0.24, 28, 20), bodyMat);
+      shoulder.position.set(0.02 * sx, 0, 0);
+      shoulder.castShadow = true;
+      arm.add(shoulder);
+
+      // brazo (tubo corto)
+      const upper = new THREE.Mesh(new THREE.CapsuleGeometry(0.15, 0.26, 8, 20), bodyMat);
+      upper.rotation.z = Math.PI / 2;
+      upper.position.set(0.21 * sx, 0, 0);
       upper.castShadow = true;
       arm.add(upper);
 
-      const hand = new THREE.Mesh(new THREE.SphereGeometry(0.215, 28, 22), bodyMat);
-      hand.position.set(0.63 * sx, 0, 0.02);
+      // mano
+      const hand = new THREE.Mesh(new THREE.SphereGeometry(0.165, 28, 22), bodyMat);
+      hand.position.set(0.42 * sx, 0, 0.01);
       hand.castShadow = true;
       arm.add(hand);
 
+      // 3 dedos (pinza): finos, largos y bien separados, con punta oscura
       for (let k = -1; k <= 1; k++) {
         const f = new THREE.Group();
-        f.position.set(0.82 * sx, 0.02 * k, 0.03);
-        f.rotation.z = 0.52 * k * sx;
-        f.rotation.y = -0.6 * k * sx;
-        const seg = new THREE.Mesh(new THREE.CapsuleGeometry(0.05, 0.15, 6, 10), bodyMat);
+        f.position.set(0.44 * sx, 0, 0.01);
+        f.rotation.z = 0.62 * k * sx;
+        const seg = new THREE.Mesh(new THREE.CapsuleGeometry(0.05, 0.16, 6, 12), bodyMat);
         seg.rotation.z = Math.PI / 2;
-        seg.position.set(0.10, 0, 0);
+        seg.position.set(0.12 * sx, 0, 0);
         f.add(seg);
-        const tip = new THREE.Mesh(new THREE.CapsuleGeometry(0.054, 0.06, 6, 10), darkMat);
-        tip.rotation.z = Math.PI / 2;
-        tip.position.set(0.21, 0, 0);
+        const tip = new THREE.Mesh(new THREE.SphereGeometry(0.055, 18, 14), darkMat);
+        tip.position.set(0.24 * sx, 0, 0);
         f.add(tip);
         arm.add(f);
       }
@@ -228,6 +237,7 @@ export class Creature {
 
   play(name) {
     if (!ONE_SHOTS[name]) return;
+    if (name === 'cheer') this.wave = Math.max(this.wave, 1.2);
     if (this.act && this.act.name === name) return;
     this.act = { name, t: 0, dur: ONE_SHOTS[name] };
   }
@@ -274,18 +284,24 @@ export class Creature {
       e.pupil.position.y = -this.look.y * 0.045;
     }
 
-    // bracitos: uno saluda, el otro se balancea
+    // saludo ocasional (no permanente)
+    this.nextWave -= dt;
+    if (this.nextWave <= 0 && !sleeping) { this.wave = 1.4; this.nextWave = 7 + Math.random() * 7; }
+    if (this.wave > 0) this.wave = Math.max(0, this.wave - dt);
+    const waving = this.wave > 0 && !sleeping;
+
+    // bracitos: por defecto relajados; el izquierdo saluda de vez en cuando
     for (let i = 0; i < this.arms.length; i++) {
       const arm = this.arms[i];
       const sx = arm.userData.sx;
-      if (arm.userData.wave && !sleeping) {
-        arm.rotation.z = -1.12 + Math.sin(t * 5.5) * 0.26;
-        arm.rotation.x = 0.10 + Math.cos(t * 5.5) * 0.12;
+      if (arm.userData.wave && waving) {
+        arm.rotation.z = -1.05 + Math.sin(t * 6.0) * 0.28;
+        arm.rotation.x = 0.10 + Math.cos(t * 6.0) * 0.10;
       } else {
         arm.rotation.z = -0.38 * sx + Math.sin(t * 1.9 + i) * 0.09;
         arm.rotation.x = Math.sin(t * 1.5 + i * 1.3) * 0.10;
       }
-      arm.position.y = -0.04 + Math.sin(t * 2.0 + i * 2) * 0.02;
+      arm.position.y = -0.05 + Math.sin(t * 2.0 + i * 2) * 0.02;
     }
 
     // one-shot
