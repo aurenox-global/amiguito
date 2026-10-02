@@ -102,8 +102,7 @@ class Game {
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 100);
-    this.camera.position.set(0, 1.62, 4.55);
-    this.camera.lookAt(0, 0.98, 0);
+    this._framing();
 
     this.scene.add(new THREE.HemisphereLight(0xfdf6ff, 0x8fd3bd, 0.95));
     this.scene.add(new THREE.AmbientLight(0xffffff, 0.25));
@@ -201,7 +200,21 @@ class Game {
   _resize() {
     const w = window.innerWidth, h = window.innerHeight;
     this.renderer.setSize(w, h, false);
-    this.camera.aspect = w / h;
+    this._framing();
+  }
+
+  // Encuadre de la cámara: en vertical (móvil) alejamos la cámara para que la
+  // mascota no ocupe toda la pantalla; en horizontal se ve más de cerca.
+  _framing() {
+    const w = window.innerWidth, h = Math.max(1, window.innerHeight);
+    const a = w / h;
+    const portrait = Math.max(0, 1 - a);      // 0 en horizontal; ~0.54 en un móvil vertical
+    const dist = 4.55 * (1 + 1.15 * portrait);
+    const fov = 42 + 6 * portrait;
+    this.camera.fov = fov;
+    this.camera.position.set(0, 1.62, dist);
+    this.camera.lookAt(0, 0.98, 0);
+    this.camera.aspect = a;
     this.camera.updateProjectionMatrix();
   }
 

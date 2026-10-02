@@ -188,4 +188,5 @@ body{
   .sheet{width:min(560px,94vw);max-height:90vh;overflow:auto}
   .opts{grid-template-columns:1fr}
   .subjects{grid-template-columns:repeat(2,1fr)}
+  .bubble{top:13%;max-width:88vw}
 }
