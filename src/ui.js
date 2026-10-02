@@ -112,6 +112,16 @@ export class UI {
 
   setZZZ(on) { if (this.zzzEl) this.zzzEl.classList.toggle('hidden', !on); }
 
+  // Cuenta regresiva de la siesta (ms restantes). 0 oculta el cartel.
+  setSleepTimer(ms) {
+    const el = $('sleep-timer');
+    if (!el) return;
+    if (!ms || ms <= 0) { el.classList.add('hidden'); return; }
+    const s = Math.ceil(ms / 1000);
+    el.textContent = `😴 ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    el.classList.remove('hidden');
+  }
+
   setBusy(act, on) {
     const b = document.querySelector(`#controls .act[data-act="${act}"]`);
     if (b) b.classList.toggle('busy', !!on);

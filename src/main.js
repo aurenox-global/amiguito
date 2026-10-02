@@ -78,6 +78,8 @@ class Game {
       return;
     }
     this._restore2({ x: (this.saved && this.saved.pos && this.saved.pos.x) || 0, z: (this.saved && this.saved.pos && this.saved.pos.z) || 0 });
+    // si estaba durmiendo al recargar, mantenemos la siesta y su cuenta regresiva
+    if (this.needs.asleep) { this.creature.setSleeping(true); this.ui.setZZZ(true); this.ui.setSleepTimer(this.needs.remaining()); }
     this.ui.setLangLabels();
     this.ui.setVoiceIcon(this.settings.voiceOn);
     this._bindUI();
@@ -86,6 +88,7 @@ class Game {
     this._loop();
     setInterval(() => this.save(), 10000);
     window.addEventListener('pagehide', () => this.save());
+    window.addEventListener('beforeunload', () => this.save());
     document.addEventListener('visibilitychange', () => { if (document.hidden) this.save(); });
   }
 
@@ -242,8 +245,13 @@ class Game {
   _update(dt) {
     this.needs.tick();
 
-    // despertar automático al recuperar energía
-    if (this.needs.asleep && this.needs.energy > 0.985) this._wake(true);
+    // despertar automático al terminar la siesta
+    if (this.needs.asleep && this.needs.remaining() <= 0) this._wake(true);
+    // cuenta regresiva de la siesta en pantalla
+    if (this.needs.asleep) {
+      this._sleepAcc = (this._sleepAcc || 0) + dt;
+      if (this._sleepAcc >= 0.5) { this._sleepAcc = 0; this.ui.setSleepTimer(this.needs.remaining()); }
+    }
 
     // decisiones autónomas (vida propia)
     if (!this.needs.asleep) {
@@ -388,9 +396,11 @@ class Game {
 
   _poke() {
     this._touch();
+    if (this.needs.asleep) return; // dormido: no reacciona a nada
     this.needs.cuddle();
     this.creature.play('pop');
     this._say('poked');
+    this.save();
   }
 
   _say(key, vars) {
@@ -409,7 +419,7 @@ class Game {
   }
 
   _action(act) {
-    if (this.needs.asleep && act !== 'sleep') { this._say('asleep_msg'); return; }
+    if (this.needs.asleep && act !== 'sleep') return; // dormido: no reacciona a nada
     this._touch();
     switch (act) {
       case 'feed':
@@ -435,28 +445,36 @@ class Game {
     }
     this.personality.learn(this.needs, this.needs.mood());
     this._refreshHUD();
+    this.save();
   }
 
   _toggleSleep() {
-    if (this.needs.asleep) this._wake(false);
-    else {
-      this.needs.asleep = true; this.wanderTarget = null;
-      this.creature.setSleeping(true); this.ui.setZZZ(true);
-      this._log(this._say('sleeping'), '💤', 'sleep');
-    }
+    if (this.needs.asleep) { this._wake(false); return; }
+    const mins = this.needs.sleepMinutes();
+    this.needs.startSleep(mins * 60 * 1000);
+    this.wanderTarget = null;
+    this.creature.setSleeping(true);
+    this.ui.setZZZ(true);
+    this.ui.setSleepTimer(this.needs.remaining());
+    this._log(this._say('sleeping') + ' 😴 ' + mins + ' min', '💤', 'sleep');
+    this.save();
   }
   _wake(auto) {
     this.needs.asleep = false;
-    this.creature.setSleeping(false); this.ui.setZZZ(false);
+    this.needs.sleepUntil = 0; this.needs.sleepStart = 0;
+    this.creature.setSleeping(false);
+    this.ui.setZZZ(false);
+    this.ui.setSleepTimer(0);
     if (auto) this._log(this._say('woke'), '⚡', 'sleep');
     this._refreshHUD();
+    this.save();
   }
 
   _log(text, emoji) { this.ui.log(text, emoji); }
 
   // ── Educación ──────────────────────────────────────────────
   _teach() {
-    if (this.needs.asleep) { this._say('asleep_msg'); return; }
+    if (this.needs.asleep) return;
     this.ui.openSubjects(SUBJECTS, this.i18n.lang, (id) => {
       if (id === 'basics') this._openLesson();
       else this._openSubject(id);
@@ -535,6 +553,7 @@ class Game {
 
   // Mantener pulsada la pantalla → hablarle por voz
   _talkByVoice() {
+    if (this.needs.asleep) return; // dormido: no reacciona a nada
     const lang = this.i18n.lang;
     if (!this.voice.canListen) { this.ui.bubble(lang === 'en' ? 'Voice input is not available here 🎤' : 'Aquí no puedo oírte por voz 🎤', 3200); return; }
     if (this._listening) return;

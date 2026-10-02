@@ -16,6 +16,9 @@ export class Needs {
     this.last = Date.now();
     this.ageHours = 0;
     this.asleep = false;
+    this.sleepStart = 0;
+    this.sleepUntil = 0;
+    this.sleepStartEnergy = 0;
   }
 
   tick(now = Date.now()) {
@@ -33,8 +36,13 @@ export class Needs {
       const strain = (this.hunger + this.boredom + (1 - this.hygiene) + (1 - this.energy)) / 4;
       this.happiness = clamp(this.happiness - hours * RATES.happiness * (0.5 + strain));
     } else {
-      // mientras duerme: recupera energía y se le pasa el hambre despacio
-      this.energy = clamp(this.energy + hours * 0.14);
+      // mientras duerme: la energía sube hasta llenarse justo al terminar la siesta
+      if (this.sleepUntil > this.sleepStart) {
+        const p = clamp((now - this.sleepStart) / (this.sleepUntil - this.sleepStart));
+        this.energy = clamp(this.sleepStartEnergy + (1 - this.sleepStartEnergy) * p);
+      } else {
+        this.energy = clamp(this.energy + hours * 0.14);
+      }
       this.hunger = clamp(this.hunger + hours * 0.03);
       this.boredom = clamp(this.boredom - hours * 0.02);
       this.happiness = clamp(this.happiness + hours * 0.02);
@@ -54,6 +62,16 @@ export class Needs {
   teach(good) { this.happiness = clamp(this.happiness + (good ? 0.12 : -0.02)); this.boredom = clamp(this.boredom - (good ? 0.25 : 0.05)); }
   cuddle() { this.happiness = clamp(this.happiness + 0.05); this.boredom = clamp(this.boredom - 0.08); }
 
+  // Duración de la siesta (min): más larga si está más cansado. Entre 2 y 10 min.
+  sleepMinutes() { return Math.max(2, Math.min(10, Math.round((1 - this.energy) * 10))); }
+  startSleep(ms) {
+    this.asleep = true;
+    this.sleepStart = Date.now();
+    this.sleepUntil = this.sleepStart + ms;
+    this.sleepStartEnergy = this.energy;
+  }
+  remaining() { return this.asleep ? Math.max(0, this.sleepUntil - Date.now()) : 0; }
+
   mood() {
     const m = this.happiness * 0.5 + (1 - this.hunger) * 0.14 + this.energy * 0.14 +
       (1 - this.boredom) * 0.1 + this.hygiene * 0.06 + this.health * 0.06;
@@ -66,7 +84,7 @@ export class Needs {
   critical() { return this.hunger > 0.85 || this.energy < 0.15 || this.hygiene < 0.15 || this.health < 0.4; }
 
   toJSON() {
-    return { hunger: this.hunger, energy: this.energy, happiness: this.happiness, hygiene: this.hygiene, boredom: this.boredom, health: this.health, last: this.last, ageHours: this.ageHours, asleep: this.asleep };
+    return { hunger: this.hunger, energy: this.energy, happiness: this.happiness, hygiene: this.hygiene, boredom: this.boredom, health: this.health, last: this.last, ageHours: this.ageHours, asleep: this.asleep, sleepStart: this.sleepStart, sleepUntil: this.sleepUntil, sleepStartEnergy: this.sleepStartEnergy };
   }
   static fromJSON(j) {
     const n = new Needs();

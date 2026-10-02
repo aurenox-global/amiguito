@@ -190,3 +190,9 @@ body{
   .subjects{grid-template-columns:repeat(2,1fr)}
   .bubble{top:13%;max-width:88vw}
 }
+
+/* ── Cuenta regresiva de la siesta ── */
+.sleep-timer{position:absolute;left:50%;top:60%;transform:translateX(-50%);background:var(--glass);
+  backdrop-filter:blur(10px);border:1px solid var(--stroke);border-radius:999px;padding:8px 18px;
+  font-weight:800;font-size:1.12rem;color:#4a6a9a;box-shadow:var(--shadow);font-variant-numeric:tabular-nums;pointer-events:none}
+.sleep-timer.hidden{display:none}
