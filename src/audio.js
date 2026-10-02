@@ -2,6 +2,11 @@
 // Así el español suena a español (y el inglés a inglés) en CUALQUIER dispositivo,
 // sin depender de las voces instaladas en el navegador. Si falta un audio o está
 // desactivado, se usa la Web Speech API como reserva.
+//
+// AUDIO_VERSION: súbelo cada vez que regeneres los audios para romper la caché
+// del navegador/CDN (los .mp3 tienen la misma URL, así que sin esto pueden quedar cacheados).
+const AUDIO_VERSION = '3';
+
 export class Sound {
   constructor() {
     this.lang = 'es';
@@ -15,7 +20,7 @@ export class Sound {
 
   async _load() {
     try {
-      const res = await fetch(new URL('../assets/audio/manifest.json', import.meta.url));
+      const res = await fetch(new URL(`../assets/audio/manifest.json?v=${AUDIO_VERSION}`, import.meta.url), { cache: 'no-store' });
       if (res.ok) { this.manifest = await res.json(); this.ready = true; }
     } catch (e) { this.ready = false; }
   }
@@ -31,7 +36,7 @@ export class Sound {
       if (!this._el) this._el = new Audio();
       // Si aún no se han tocado audios, intentamos desbloquear en el primer gesto.
       this._el.pause();
-      this._el.src = new URL(`../assets/audio/${lang}/${id}.mp3`, import.meta.url).href;
+      this._el.src = new URL(`../assets/audio/${lang}/${id}.mp3?v=${AUDIO_VERSION}`, import.meta.url).href;
       this._el.currentTime = 0;
       const p = this._el.play();
       if (p && p.catch) p.catch(() => {});

@@ -541,7 +541,7 @@ class Game {
     if (p.pitch != null) this.voice.pitch = p.pitch;
     if (p.rate != null) this.voice.rate = p.rate;
     if (p.voiceURI !== undefined) this.voice.voiceURI = p.voiceURI || null;
-    if (p.test) this.voice.test(this.i18n.lang);
+    if (p.test) { if (!this.sound.play(this.i18n.lang, 'greet')) this.voice.test(this.i18n.lang); }
     if (p.lang) { this._setLang(p.lang); if (p.reopen) this.ui.openSettings(this._settingsData(), (x) => this._onSettings(x)); }
     if (p.export) store.download(this._serialize());
     if (p.import) store.upload().then((obj) => { if (obj) { store.save(obj); location.reload(); } else this.ui.bubble(this.i18n.t('import_fail')); });
@@ -553,7 +553,7 @@ class Game {
     this.i18n.set(lang); this.voice.lang = lang; this.sound.lang = lang; this.settings.lang = lang;
     this.ui.setLangLabels();
     const g = this.i18n.t('greet', { name: this.petName });
-    if (this.settings.voiceOn) this.voice.speak(g, { lang });
+    if (this.settings.voiceOn) { if (!this.sound.play(lang, 'greet')) this.voice.speak(g, { lang }); }
     this.save();
   }
 
